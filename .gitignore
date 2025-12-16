@@ -1,0 +1,67 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+
+# Data
+data/*.pdf
+*.pdf
+backend/data/*.pdf
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ==========================================
+# PROJECT-SPECIFIC (ADD THESE)
+# ==========================================
+
+# Temporary documentation (RCA/debug docs)
+CRITICAL_FIXES_REQUIRED.md
+DOCUMENT_FILTERING_FIX.md
+POST_RETRIEVAL_FILTERING_FIX.md
+ANALYSIS_AND_RECOMMENDATIONS.md
+SUMMARY.md
+cursor_instructions.md
+
+# Testing and utility scripts
+backend/test_agent.py
+backend/test_mongo.py
+backend/test_ocr_quality.py
+backend/fix_qdrant_data.py
+backend/pdf_processor_with_nanonets.py
+
+# Optional: Uncomment if you want to exclude utility scripts
+# backend/reindex_pdfs.py
+# backend/reset_and_verify.py
+
+# Cursor-specific
+terminals/
+
+# Logs
+backend/logs/
+*.log
+
+backend/reindex_pdfs.py   
+backend/reset_and_verify.py 
