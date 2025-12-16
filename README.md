@@ -314,16 +314,6 @@ User Query → GPT-4o-mini (analyze) → Select Tool(s) → Execute → Synthesi
 | "Find 7.2 value" | `keyword_search` | Exact match required |
 | "Explain diagnosis" | `semantic_search` | Conceptual understanding |
 
-## 📊 Performance & Cost
-
-### Performance Metrics (Production-Tested)
-```
-Query Latency:          1.7s average (<2s target ✅)
-Search Accuracy:        95% (hybrid search)
-OCR Quality:            0.95 (Nanonets) | 1.0 (direct)
-Document Isolation:     100% accurate
-Uptime:                 99.9%
-```
 
 ### Cost Analysis
 **Per 1,000 queries:**
@@ -340,50 +330,8 @@ Annual estimate:          ~$50/year (10K queries/month)
 
 **78% cheaper than industry standard ($2/1K queries)**
 
-## 📚 Documentation
-
-This project includes **50+ pages** of comprehensive documentation:
-
-| Document | Description | Pages |
-|----------|-------------|-------|
-| **[ARCHITECTURE.md](ARCHITECTURE.md)** | Complete technical deep dive, design decisions, trade-offs | 35+ |
-| **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** | Step-by-step deployment (Railway, AWS, Docker) | 10+ |
-| **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** | Executive summary, achievements, metrics | 15+ |
-| **[SYSTEM_FLOW_DIAGRAM.md](SYSTEM_FLOW_DIAGRAM.md)** | Visual diagrams of data flow and components | 8+ |
-
-### What's Documented
-
-✅ **Every design decision explained** - "Why we chose X over Y"  
-✅ **Complete architecture breakdown** - All 9 components with rationale  
-✅ **Production readiness checklist** - Security, scalability, monitoring  
-✅ **Performance benchmarks** - Latency, accuracy, cost analysis  
-✅ **Troubleshooting guide** - Common issues and solutions  
-✅ **Deployment options** - Local, cloud, Docker, serverless  
-
-**Perfect for:** Technical interviews, portfolio, team onboarding
 
 ---
-
-## 🚀 Future Enhancements
-
-### Short-term (Production Launch)
-- [ ] JWT authentication & authorization
-- [ ] Rate limiting (nginx/CloudFlare)
-- [ ] Prometheus + Grafana monitoring
-- [ ] Error tracking (Sentry)
-
-### Medium-term (Scale)
-- [ ] Multi-tenancy support
-- [ ] Advanced analytics dashboard
-- [ ] Batch OCR processing queue
-- [ ] Query caching with Redis
-
-### Long-term (Enterprise)
-- [ ] HIPAA compliance audit
-- [ ] Medical NER (entity extraction)
-- [ ] ICD-10 code auto-extraction
-- [ ] Fine-tuned medical embeddings
-- [ ] Mobile app (React Native)
 
 ## 🔧 Troubleshooting
 
@@ -464,39 +412,4 @@ curl -X GET "https://your-cluster.gcp.cloud.qdrant.io:6333/collections" \
 - **Vercel/Netlify** - Frontend hosting
 - **MongoDB Atlas** - Managed database
 
----
 
-## 📄 License
-
-MIT License - See [LICENSE](LICENSE) file
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Please read [ARCHITECTURE.md](ARCHITECTURE.md) first to understand the system design.
-
----
-
-## 📞 Support
-
-- **Documentation:** See [ARCHITECTURE.md](ARCHITECTURE.md)
-- **Deployment:** See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
-- **Issues:** [GitHub Issues](https://github.com/DhairyaShah981/clinical-notes-copilot/issues)
-- **API Docs:** http://localhost:8000/docs (when running)
-
----
-
-## ⭐ Acknowledgments
-
-Built with:
-- OpenAI GPT-4o-mini & text-embedding-3-large
-- Qdrant vector database
-- LlamaIndex framework
-- FastAPI & React
-
----
-
-**Status:** ✅ Production-Ready  
-**Last Updated:** December 2025  
-**Version:** 2.0
