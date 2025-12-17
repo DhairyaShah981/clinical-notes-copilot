@@ -138,17 +138,17 @@ class DocumentProcessor:
         """
         Smart chunking that adapts based on document size.
         
-        For small documents (< 1500 chars), returns the entire text as one chunk
-        to prevent losing content at chunk boundaries.
+        For small documents (< 3000 chars / ~1 page), returns the entire text as one chunk
+        to prevent losing content at chunk boundaries. Most 1-page clinical notes are 1500-2500 chars.
         
-        For larger documents, uses normal sentence-based chunking.
+        For larger documents, uses normal sentence-based chunking with 40% overlap.
         """
-        # Small documents: keep as single chunk to preserve all content
-        if len(text) < 1500:
+        # Small documents (1-page clinical notes): keep as single chunk to preserve all content
+        if len(text) < 3000:
             logger.info(f"   📄 Small document ({len(text)} chars) - indexing as single chunk")
             return [text]
         
-        # Large documents: use normal chunking
+        # Large documents (2+ pages): use normal chunking with overlap
         chunks = self.text_splitter.split_text(text)
         logger.info(f"   📄 Large document ({len(text)} chars) - split into {len(chunks)} chunks")
         return chunks

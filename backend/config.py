@@ -47,7 +47,7 @@ class Settings:
     # ✅ IMPROVED: Chunking settings for legal/medical documents
     # Larger chunks keep sections together (e.g., "8. Relocation Allowance" stays intact)
     CHUNK_SIZE: int = 512  # Was 512, increased for better context
-    CHUNK_OVERLAP: int = 128  # Was 50, increased to preserve context across boundaries
+    CHUNK_OVERLAP: int = 200  # Was 50, increased to preserve context across boundaries
     
     # Collection name
     COLLECTION_NAME: str = "clinical_notes"
