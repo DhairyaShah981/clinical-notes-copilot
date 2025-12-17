@@ -227,7 +227,7 @@ class ClinicalSearchAgent:
             "count": len(results)
         }
     
-    def _keyword_search(self, query: str, top_k: int = 5) -> Dict[str, Any]:
+    def _keyword_search(self, query: str, top_k: int = 10) -> Dict[str, Any]:
         """BM25 keyword search"""
         results = self.hybrid_engine.keyword_search(query, top_k=top_k)
         
@@ -255,7 +255,7 @@ class ClinicalSearchAgent:
             "count": len(formatted)
         }
     
-    def _hybrid_search(self, query: str, top_k: int = 5) -> Dict[str, Any]:
+    def _hybrid_search(self, query: str, top_k: int = 10) -> Dict[str, Any]:
         """Combined vector + BM25 with RRF"""
         # Adaptive top_k based on document size
         if self.document_chunk_count:
@@ -294,7 +294,7 @@ class ClinicalSearchAgent:
         for i, r in enumerate(hybrid_results):
             cleaned = clean_markdown_text(r["text"])
             results.append({
-                "text": cleaned[:500],
+                "text": cleaned[:1000],  # Increased from 500 to 1000 for better context
                 "page": r["metadata"].get("page_number", "N/A"),
                 "source": r["metadata"].get("source", "Unknown"),
                 "score": round(r["score"], 4),
