@@ -385,11 +385,15 @@ SEARCH STRATEGY:
             iterations += 1
             
             # Call OpenAI with tools
+            # CRITICAL: Force tool use on first iteration to prevent hallucination
+            # After first search, allow agent to decide (for answer formatting)
+            tool_choice_param = "required" if iterations == 1 else "auto"
+            
             response = self.client.chat.completions.create(
                 model=settings.LLM_MODEL,
                 messages=messages,
                 tools=CLINICAL_SEARCH_TOOLS,
-                tool_choice="auto",
+                tool_choice=tool_choice_param,
                 temperature=0.1
             )
             
