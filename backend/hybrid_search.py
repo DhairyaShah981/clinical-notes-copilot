@@ -28,12 +28,30 @@ class HybridSearchEngine:
             print(f"BM25 indexed {len(documents)} documents")
     
     def keyword_search(self, query: str, top_k: int = 10) -> List[Tuple[Document, float]]:
-        """BM25 keyword search"""
+        """BM25 keyword search with smart query processing"""
         if self.bm25 is None:
             return []
         
+        # Smart query processing
+        # 1. Try uppercase version for headers (e.g., "chapter objectives" → "CHAPTER OBJECTIVES")
+        # 2. Remove common stop words
+        # 3. Extract key phrases
+        
+        stop_words = {'the', 'a', 'an', 'of', 'to', 'in', 'for', 'on', 'at', 'by', 'with', 'from', 'is', 'are'}
+        
+        # Original query
         tokenized_query = query.lower().split()
-        scores = self.bm25.get_scores(tokenized_query)
+        
+        # Remove stop words for focused search
+        focused_tokens = [w for w in tokenized_query if w not in stop_words]
+        
+        # Try uppercase version (for matching headers like "CHAPTER OBJECTIVES")
+        uppercase_tokens = [w.upper() for w in focused_tokens]
+        
+        # Combine: original + focused + uppercase
+        enhanced_query = tokenized_query + focused_tokens + uppercase_tokens
+        
+        scores = self.bm25.get_scores(enhanced_query)
         top_indices = np.argsort(scores)[::-1][:top_k]
         
         results = []

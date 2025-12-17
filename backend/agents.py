@@ -169,7 +169,7 @@ class ClinicalSearchAgent:
     def _execute_tool(self, tool_name: str, arguments: Dict) -> Dict[str, Any]:
         """Execute a search tool and return results"""
         query = arguments.get("query", "")
-        top_k = arguments.get("top_k", 5)
+        top_k = arguments.get("top_k", 10)  # Increased from 5 to 10 for better coverage
         
         if tool_name == "semantic_search":
             return self._semantic_search(query, top_k)
@@ -180,7 +180,7 @@ class ClinicalSearchAgent:
         else:
             return {"error": f"Unknown tool: {tool_name}"}
     
-    def _semantic_search(self, query: str, top_k: int = 5) -> Dict[str, Any]:
+    def _semantic_search(self, query: str, top_k: int = 10) -> Dict[str, Any]:
         """Vector similarity search with post-retrieval filtering"""
         # Retrieve more results if filtering (to compensate for filtered-out chunks)
         retrieval_k = top_k * 3 if (self.filter_document_id or self.filter_source) else top_k
@@ -499,7 +499,7 @@ class SimpleRAGEngine:
             retriever = self.index.as_retriever(similarity_top_k=10)
             vector_results = retriever.retrieve(question)
             hybrid_results = self.hybrid_engine.hybrid_search(
-                question, vector_results, top_k=5
+                question, vector_results, top_k=10  # Increased for better coverage
             )
             
             context = "\n\n".join([
@@ -508,7 +508,7 @@ class SimpleRAGEngine:
             ])
             search_type = "hybrid"
         else:
-            retriever = self.index.as_retriever(similarity_top_k=5)
+            retriever = self.index.as_retriever(similarity_top_k=10)  # Increased from 5
             nodes = retriever.retrieve(question)
             
             context = "\n\n".join([
