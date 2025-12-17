@@ -481,6 +481,12 @@ async def query(request: QueryRequest):
         doc_hybrid_engine = HybridSearchEngine()
         doc_hybrid_engine.index_documents(filtered_docs, silent=True)
         
+        # DEBUG: Print chunk contents to diagnose search issues
+        print(f"   📋 DEBUG: Chunk contents for this document:")
+        for i, doc in enumerate(filtered_docs[:3]):  # Show first 3 chunks
+            text_preview = doc.text[:200].replace('\n', ' ')
+            print(f"      Chunk {i+1}: {text_preview}...")
+        
         doc_chunk_count = len(filtered_docs)
         
     else:

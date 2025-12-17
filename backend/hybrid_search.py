@@ -52,6 +52,11 @@ class HybridSearchEngine:
         """Combine vector + BM25 with RRF (Reciprocal Rank Fusion)"""
         bm25_results = self.keyword_search(query, top_k=top_k * 2)
         
+        # DEBUG: Show what BM25 found
+        print(f"     🔎 BM25 search found {len(bm25_results)} results for query: '{query}'")
+        if len(bm25_results) > 0:
+            print(f"        Top BM25 result: {bm25_results[0][0].text[:100]}...")
+        
         # RRF scoring
         vector_scores = {}
         bm25_scores = {}
