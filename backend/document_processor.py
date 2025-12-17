@@ -134,6 +134,25 @@ class DocumentProcessor:
             chunk_overlap=settings.CHUNK_OVERLAP
         )
     
+    def _smart_chunk(self, text: str) -> List[str]:
+        """
+        Smart chunking that adapts based on document size.
+        
+        For small documents (< 1500 chars), returns the entire text as one chunk
+        to prevent losing content at chunk boundaries.
+        
+        For larger documents, uses normal sentence-based chunking.
+        """
+        # Small documents: keep as single chunk to preserve all content
+        if len(text) < 1500:
+            logger.info(f"   📄 Small document ({len(text)} chars) - indexing as single chunk")
+            return [text]
+        
+        # Large documents: use normal chunking
+        chunks = self.text_splitter.split_text(text)
+        logger.info(f"   📄 Large document ({len(text)} chars) - split into {len(chunks)} chunks")
+        return chunks
+    
     def create_documents(self, file_path: str) -> List[Document]:
         """
         Process any supported document format and return chunked documents.
@@ -182,8 +201,8 @@ class DocumentProcessor:
             # Calculate quality
             quality_score, quality_details = calculate_text_quality(text)
             
-            # Chunk the text
-            chunks = self.text_splitter.split_text(text)
+            # Chunk the text (smart chunking for small docs)
+            chunks = self._smart_chunk(text)
             
             # Create documents
             documents = []
@@ -252,8 +271,8 @@ class DocumentProcessor:
             # Calculate quality
             quality_score, quality_details = calculate_text_quality(full_text)
             
-            # Chunk the text
-            chunks = self.text_splitter.split_text(full_text)
+            # Chunk the text (smart chunking for small docs)
+            chunks = self._smart_chunk(full_text)
             
             # Create documents
             documents = []
@@ -352,8 +371,8 @@ class DocumentProcessor:
             # Calculate quality
             quality_score, _ = calculate_text_quality(full_text)
             
-            # Chunk text
-            chunks = self.text_splitter.split_text(full_text)
+            # Chunk text (smart chunking for small docs)
+            chunks = self._smart_chunk(full_text)
             
             # Create documents
             documents = []
@@ -445,7 +464,8 @@ class DocumentProcessor:
                     markdown_text = clean_markdown_text(markdown_text)
                     quality_score, _ = calculate_text_quality(markdown_text)
                     
-                    chunks = self.text_splitter.split_text(markdown_text)
+                    # Chunk text (smart chunking for small docs)
+                    chunks = self._smart_chunk(markdown_text)
                     
                     # Create documents
                     documents = []
