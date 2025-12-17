@@ -351,17 +351,19 @@ class DocumentProcessor:
             return False, 0
     
     def _extract_text_direct(self, file_path: Path) -> List[Document]:
-        """Extract text directly from searchable PDF."""
+        """Extract text directly from searchable PDF with page tracking."""
         try:
             doc = fitz.open(str(file_path))
             full_text = ""
             page_texts = []
+            page_boundaries = [0]  # Track character positions where pages start
             
             for page_num in range(len(doc)):
                 page = doc[page_num]
                 text = page.get_text()
                 page_texts.append((page_num + 1, text))
                 full_text += f"\n\n{text}"
+                page_boundaries.append(len(full_text))  # Mark end of this page
             
             doc.close()
             
@@ -374,15 +376,45 @@ class DocumentProcessor:
             # Chunk text (smart chunking for small docs)
             chunks = self._smart_chunk(full_text)
             
+            # Helper function to determine which pages a chunk spans
+            def get_page_range(chunk_text: str, full_text: str, page_boundaries: list) -> str:
+                """Determine which pages a chunk spans based on its position in full_text."""
+                try:
+                    chunk_start = full_text.find(chunk_text[:100])  # Find chunk position
+                    if chunk_start == -1:
+                        return f"1-{len(page_texts)}"  # Fallback
+                    
+                    chunk_end = chunk_start + len(chunk_text)
+                    
+                    # Find which pages this chunk spans
+                    start_page = 1
+                    end_page = len(page_texts)
+                    
+                    for i, boundary in enumerate(page_boundaries):
+                        if chunk_start >= boundary:
+                            start_page = i + 1
+                        if chunk_end <= boundary:
+                            end_page = i
+                            break
+                    
+                    if start_page == end_page:
+                        return str(start_page)
+                    else:
+                        return f"{start_page}-{end_page}"
+                except:
+                    return f"1-{len(page_texts)}"  # Fallback
+            
             # Create documents
             documents = []
             for i, chunk in enumerate(chunks):
+                page_range = get_page_range(chunk, full_text, page_boundaries)
+                
                 doc = Document(
                     text=chunk,
                     metadata={
                         "source": file_path.name,
                         "file_type": "pdf",
-                        "page_number": f"1-{len(page_texts)}",
+                        "page_number": page_range,
                         "chunk_index": i,
                         "total_chunks": len(chunks),
                         "ocr_method": "direct",
