@@ -294,7 +294,7 @@ export default function App() {
                   <FileUp className="h-5 w-5 text-medical-accent" />
                   Upload New Document
                 </h3>
-                <input type="file" ref={fileRef} onChange={upload} multiple accept=".pdf" className="hidden" />
+                <input type="file" ref={fileRef} onChange={upload} multiple accept=".pdf,.docx,.txt" className="hidden" />
                 <button 
                   onClick={() => fileRef.current.click()} 
                   disabled={uploading || apiStatus !== 'connected'}
@@ -306,11 +306,11 @@ export default function App() {
                   {uploading ? (
                     <><Loader2 className="h-5 w-5 animate-spin" /> Processing...</>
                   ) : (
-                    <><Plus className="h-5 w-5" /> Upload PDF Files</>
+                    <><Plus className="h-5 w-5" /> Upload Documents</>
                   )}
                 </button>
                 <p className="text-xs text-slate-500 mt-3 text-center">
-                  Documents are stored persistently in MongoDB + Qdrant Cloud
+                  Supports PDF, DOCX, TXT • Stored in MongoDB + Qdrant Cloud
                 </p>
               </div>
 
@@ -361,7 +361,7 @@ export default function App() {
                     <div className="text-center py-16 text-slate-400">
                       <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p className="font-medium">No documents uploaded yet</p>
-                      <p className="text-sm mt-1">Upload a PDF to get started</p>
+                      <p className="text-sm mt-1">Upload PDF, DOCX, or TXT files to get started</p>
                     </div>
                   ) : (
                     documents.map(doc => (

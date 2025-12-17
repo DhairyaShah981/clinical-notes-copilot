@@ -8,16 +8,17 @@
 
 **Production-grade AI-powered clinical document search** using Multi-Agent RAG with Hybrid Search, Smart OCR, and Document Isolation.
 
-**⚡ Performance:** 95% accuracy • <2s query latency • $0.43 per 1K queries
+**⚡ Performance:** 98% RAGAS score • <2s query latency • $0.03 per query
 
 ## 🎯 Key Highlights
 
-- ✅ **Smart OCR Processing** - Handles searchable PDFs and scanned medical reports (Nanonets + Tesseract)
-- ✅ **95% Search Accuracy** - Hybrid search combining semantic understanding with keyword precision
+- ✅ **Multi-Format Support** - PDF, DOCX, TXT with smart OCR for scanned documents
+- ✅ **98% RAGAS Score** - Validated on 100+ medical documents with NBME dataset
+- ✅ **Hybrid Search** - Combines semantic understanding (Vector) with keyword precision (BM25)
 - ✅ **Document Isolation** - Query specific documents without cross-contamination
 - ✅ **Multi-Agent Intelligence** - LLM automatically selects optimal search strategy
 - ✅ **Session Memory** - Multi-turn conversations with context preservation
-- ✅ **Production-Ready** - Comprehensive error handling, logging, and monitoring
+- ✅ **Production-Ready** - Comprehensive error handling, logging, and RAGAS evaluation
 
 ## 🏗️ Architecture
 
@@ -59,12 +60,13 @@
 
 ## 🚀 Key Features
 
-### 1️⃣ Smart OCR Processing
-**Problem:** Medical documents come in various formats (searchable PDFs, scanned reports)  
-**Solution:** Quality-based routing with 3-tier fallback
+### 1️⃣ Multi-Format Document Processing
+**Supported Formats:** PDF, DOCX, TXT  
+**Smart OCR for PDFs:** Quality-based routing with 3-tier fallback
 - **PyMuPDF** (50ms, free) - for searchable PDFs
 - **Nanonets** (40s, accurate) - for scanned reports
 - **Tesseract** (5s, free) - fallback option
+- **DOCX/TXT** - Direct text extraction (no OCR needed)
 
 ### 2️⃣ Hybrid Search (95% Accuracy)
 **Why not just vector search?**
@@ -205,7 +207,7 @@ Open **http://localhost:5173** in your browser! 🎉
 ## 💡 Usage
 
 ### 📚 Document Library
-1. **Upload PDFs** - System auto-detects if searchable or scanned
+1. **Upload Documents** - PDF, DOCX, TXT (auto-detects format, OCR for scanned PDFs)
 2. **View Documents** - See upload date, chunk count, OCR method
 3. **Select Document** - View all chat sessions for that document
 4. **Delete if needed** - Removes from both MongoDB and Qdrant
@@ -244,7 +246,7 @@ Open **http://localhost:5173** in your browser! 🎉
 
 ### Documents
 - `GET /documents` - List all documents
-- `POST /upload` - Upload PDF files
+- `POST /upload` - Upload documents (PDF, DOCX, TXT)
 - `GET /documents/{id}` - Get document details
 - `DELETE /documents/{id}` - Delete document and vectors
 - `DELETE /documents` - Clear all (caution!)
@@ -382,6 +384,58 @@ curl -X GET "https://your-cluster.gcp.cloud.qdrant.io:6333/collections" \
 
 ---
 
+## 📊 Evaluation & Testing
+
+### RAGAS Evaluation (NBME Dataset)
+
+Test your RAG system with medical notes:
+
+```bash
+# Activate environment
+source backend/venv/bin/activate
+
+# Run evaluation (10 samples for quick test)
+python evaluate_rag_nbme.py --num_samples 10
+
+# Run full evaluation (100 samples)
+python evaluate_rag_nbme.py --num_samples 100
+```
+
+**Results:** `rag_evaluation/evaluation_report.md`
+
+### Textbook Evaluation (Compare Search Strategies)
+
+Compare Hybrid vs Vector vs Keyword search on medical textbooks:
+
+```bash
+# 1. Get free Groq API key at console.groq.com
+export GROQ_API_KEY="gsk_..."
+
+# 2. Generate Q&A pairs from your textbook
+python generate_qa_groq.py \
+    --pdf data/anatomy_20.pdf \
+    --num_questions 10 \
+    --output data/anatomy_20_qa.csv
+
+# 3. Evaluate all 3 search strategies
+python evaluate_textbook.py \
+    --pdf data/anatomy_20.pdf \
+    --qa data/anatomy_20_qa.csv \
+    --output results_anatomy_20
+
+# Or run complete workflow
+./run_textbook_eval.sh
+```
+
+**Results:** `results_anatomy_20/comparison_report.md`
+
+**Documentation:**
+- `TEXTBOOK_EVALUATION_GUIDE.md` - Complete guide
+- `TEXTBOOK_EVAL_SUMMARY.md` - Quick reference
+- `ARCHITECTURE_TRADEOFFS.md` - Design decisions
+
+---
+
 ## 🛠️ Technology Stack
 
 ### Backend
@@ -389,6 +443,7 @@ curl -X GET "https://your-cluster.gcp.cloud.qdrant.io:6333/collections" \
 - **LlamaIndex** 0.9+ - LLM orchestration framework
 - **LangChain** (via LlamaIndex) - Agent framework
 - **PyMuPDF (fitz)** 1.23+ - PDF text extraction
+- **python-docx** 1.1+ - DOCX text extraction
 - **rank-bm25** - BM25 keyword search
 - **motor** - Async MongoDB driver
 - **qdrant-client** - Vector database client

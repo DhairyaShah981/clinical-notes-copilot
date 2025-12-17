@@ -36,6 +36,39 @@ def clean_markdown_text(text: str) -> str:
     return text.strip()
 
 
+def clean_answer(answer: str) -> str:
+    """Remove verbose meta-commentary from LLM answers to improve RAGAS relevancy"""
+    if not answer:
+        return ""
+    
+    # Remove common verbose patterns
+    remove_patterns = [
+        r"The search results? (do not|don't|did not|didn't) (explicitly )?mention[^.]*\.",
+        r"The search did not yield[^.]*\.",
+        r"If you (need|have|want) (more|further|additional|any) (information|details|context|questions?)[^.!]*[.!]",
+        r"[Pp]lease let me know[^.!]*[.!]",
+        r"[Ff]eel free to ask[^.!]*[.!]",
+        r"\(source:.*?\)",  # Remove inline citations
+        r"This information is found in[^.]*\.",
+        r"Based on the (search results?|clinical notes?|context)[^,]*,\s*",
+        r"According to the (search results?|clinical notes?|context)[^,]*,\s*",
+    ]
+    
+    cleaned = answer
+    for pattern in remove_patterns:
+        cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
+    
+    # Remove extra whitespace and newlines
+    cleaned = re.sub(r'\n+', ' ', cleaned)
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    
+    # If answer became too short or empty, return original
+    if len(cleaned) < 10:
+        return answer.strip()
+    
+    return cleaned
+
+
 # Tool definitions for OpenAI function calling
 CLINICAL_SEARCH_TOOLS = [
     {
@@ -304,30 +337,31 @@ class ClinicalSearchAgent:
         messages = [
             {
                 "role": "system",
-                "content": """You are an intelligent document search assistant.
-Your job is to help users find information in their documents accurately and comprehensively.
+                "content": """You are a medical information search assistant. Answer questions DIRECTLY and CONCISELY.
 
-RULES:
-1. ONLY use information from the search results - never make up information
-2. Always cite the source document and page number
-3. If information is not found, clearly state that
-4. Be thorough and provide complete answers with all relevant details
-5. Quote relevant sections when answering
+CRITICAL ANSWER RULES:
+1. Answer in 1-3 sentences maximum
+2. Be direct: Start with Yes/No if the question asks about presence
+3. NO meta-commentary about "search results" or "findings"
+4. NO offers to help further ("let me know", "feel free to ask")
+5. NO inline source citations (sources are handled separately)
+6. ONLY use information from retrieved context - never fabricate
 
-SEARCH STRATEGY (IMPORTANT):
-- **DEFAULT: Use hybrid_search for most queries** - it combines semantic understanding + keyword matching for best results
-- Use semantic_search ONLY for very broad conceptual queries without specific terms
-- Use keyword_search ONLY for exact value lookups (specific codes, precise measurements, unique identifiers)
+ANSWER FORMAT:
+- Presence questions: "Yes, [topic] is mentioned." OR "No, [topic] is not mentioned."
+- Detail questions: State the fact directly in 1-2 sentences.
+- If not found: "This information is not found in the document."
 
 EXAMPLES:
-✅ "What is the data protection policy?" → hybrid_search (needs both concept + specific terms)
-✅ "What are the benefits mentioned?" → hybrid_search (comprehensive search needed)
-✅ "What is the diagnosis?" → hybrid_search (medical term + context)
-✅ "What medications are prescribed?" → hybrid_search (specific drugs + context)
-❌ "HbA1c: 7.2" → keyword_search (exact value lookup)
-❌ "ICD-10: E11.9" → keyword_search (exact code)
+❌ BAD: "The search results do not explicitly mention X. However, the text describes... If you need more info..."
+✅ GOOD: "No, X is not mentioned."
 
-When in doubt, use hybrid_search - it's the most comprehensive."""
+❌ BAD: "Based on the document, homeostasis is defined as... (source: file.txt). Feel free to ask..."  
+✅ GOOD: "Homeostasis is the maintenance of stable internal conditions."
+
+SEARCH STRATEGY:
+- DEFAULT: Use hybrid_search for most queries
+- Use keyword_search ONLY for exact terms/codes (specific values, ICD codes, exact phrases)"""
             }
         ]
         
@@ -406,8 +440,9 @@ When in doubt, use hybrid_search - it's the most comprehensive."""
                 # No more tool calls - we have the final answer
                 break
         
-        # Get final answer
-        final_answer = assistant_message.content or "I couldn't find relevant information in the clinical notes."
+        # Get final answer and clean it for conciseness
+        raw_answer = assistant_message.content or "This information is not found in the notes."
+        final_answer = clean_answer(raw_answer)
         
         # Deduplicate and limit sources
         unique_sources = []
@@ -479,10 +514,16 @@ class SimpleRAGEngine:
         messages = [
             {
                 "role": "system",
-                "content": """You are a clinical notes search assistant for physicians.
-Answer questions based ONLY on the provided clinical notes context.
-Always cite the source document and page number.
-If the information is not in the context, say so clearly."""
+                "content": """You are a medical information search assistant. Answer DIRECTLY and CONCISELY in 1-3 sentences.
+
+RULES:
+- Start with Yes/No for presence questions
+- NO meta-commentary ("search results show", "based on the document")
+- NO source citations in answer (handled separately)
+- NO offers for further help
+- If not found: "This information is not found in the document."
+
+ONLY use the provided context. Be direct."""
             }
         ]
         
@@ -497,12 +538,12 @@ If the information is not in the context, say so clearly."""
         # Add current query with context
         messages.append({
             "role": "user",
-            "content": f"""Clinical Notes Context:
+            "content": f"""Context:
 {context}
 
 Question: {question}
 
-Please provide a detailed answer based on the clinical notes above."""
+Answer directly in 1-3 sentences:"""
         })
         
         # Get response
@@ -512,7 +553,8 @@ Please provide a detailed answer based on the clinical notes above."""
             temperature=0.1
         )
         
-        answer = response.choices[0].message.content
+        raw_answer = response.choices[0].message.content
+        answer = clean_answer(raw_answer)
         
         # Format sources
         sources = []

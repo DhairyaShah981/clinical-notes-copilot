@@ -1,0 +1,9 @@
+# RAGAS Evaluation Dependencies
+# Install with: pip install -r requirements_eval.txt
+
+ragas>=0.1.0
+datasets>=2.14.0
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-community>=0.0.20
+

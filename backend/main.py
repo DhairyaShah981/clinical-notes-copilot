@@ -19,7 +19,7 @@ from contextlib import asynccontextmanager
 from llama_index.core import VectorStoreIndex
 
 from config import settings
-from pdf_processor import PDFProcessor
+from document_processor import DocumentProcessor
 from vector_store import VectorStoreManager
 from hybrid_search import HybridSearchEngine
 from agents import ClinicalSearchAgent, SimpleRAGEngine
@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
     app.state.db = get_database()
     app.state.vector_store = VectorStoreManager()
     app.state.hybrid_engine = HybridSearchEngine()
-    app.state.pdf_processor = PDFProcessor()
+    app.state.doc_processor = DocumentProcessor()
     
     # Load existing documents from Qdrant into memory for BM25
     print("📥 Loading existing documents from Qdrant...")
@@ -178,17 +178,22 @@ async def list_documents():
 
 @app.post("/upload")
 async def upload_document(files: List[UploadFile] = File(...)):
-    """Upload and index PDF documents"""
+    """Upload and index documents (PDF, DOCX, TXT)"""
     db: Database = app.state.db
     vector_store: VectorStoreManager = app.state.vector_store
     hybrid_engine: HybridSearchEngine = app.state.hybrid_engine
-    pdf_processor: PDFProcessor = app.state.pdf_processor
+    doc_processor: DocumentProcessor = app.state.doc_processor
+    
+    # Supported formats
+    SUPPORTED_FORMATS = {'.pdf', '.docx', '.txt'}
     
     results = []
     
     for file in files:
-        if not file.filename.endswith('.pdf'):
-            raise HTTPException(400, f"Only PDF files allowed: {file.filename}")
+        # Check file extension
+        file_ext = Path(file.filename).suffix.lower()
+        if file_ext not in SUPPORTED_FORMATS:
+            raise HTTPException(400, f"Unsupported format: {file.filename}. Supported: PDF, DOCX, TXT")
         
         # Check if document already exists
         existing = db.document_exists(file.filename)
@@ -207,8 +212,8 @@ async def upload_document(files: List[UploadFile] = File(...)):
         with open(file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
         
-        # Process PDF (this may use OCR if scanned)
-        docs = pdf_processor.create_documents(str(file_path))
+        # Process document (auto-detects format)
+        docs = doc_processor.create_documents(str(file_path))
         
         if not docs:
             raise HTTPException(400, f"Could not extract text from {file.filename}")
@@ -291,24 +296,35 @@ async def delete_document(document_id: str):
     if not doc:
         raise HTTPException(404, "Document not found")
     
-    # Delete from Qdrant
-    vector_store.delete_document_vectors(document_id)
+    print(f"\n🗑️  Deleting document: {document_id}")
+    print(f"   📄 Filename: {doc.get('filename')}")
+    print(f"   📍 Point IDs: {len(doc.get('qdrant_point_ids', []))} vectors")
     
-    # Delete from MongoDB
-    db.delete_document(document_id)
+    # Delete from Qdrant using point IDs (reliable method)
+    point_ids = doc.get("qdrant_point_ids", [])
+    vector_store.delete_document_vectors(document_id, point_ids=point_ids)
     
     # Delete file
     file_path = Path(doc.get("file_path", ""))
     if file_path.exists():
         file_path.unlink()
+        print(f"   🗑️  Deleted file: {file_path}")
     
-    # Rebuild BM25 index
+    # Delete from MongoDB (do this AFTER Qdrant/file deletion)
+    db.delete_document(document_id)
+    print(f"   🗑️  Deleted from MongoDB")
+    
+    # Rebuild BM25 index with remaining documents
     all_docs = vector_store.get_all_documents()
     if all_docs:
         hybrid_engine.index_documents(all_docs)
+        print(f"   🔍 BM25 index rebuilt with {len(all_docs)} chunks")
     else:
         hybrid_engine.documents = []
         hybrid_engine.bm25 = None
+        print(f"   📭 BM25 index cleared (no documents remaining)")
+    
+    print(f"✅ Document {document_id} deleted successfully\n")
     
     return {"message": f"Deleted document {document_id}"}
 
@@ -331,9 +347,10 @@ async def clear_all_documents():
     hybrid_engine.documents = []
     hybrid_engine.bm25 = None
     
-    # Clear data directory
-    for f in DATA_DIR.glob("*.pdf"):
-        f.unlink()
+    # Clear data directory (all supported formats)
+    for pattern in ["*.pdf", "*.docx", "*.txt"]:
+        for f in DATA_DIR.glob(pattern):
+            f.unlink()
     
     return {"message": "All documents cleared"}
 

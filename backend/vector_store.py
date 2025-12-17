@@ -279,32 +279,31 @@ class VectorStoreManager:
             import traceback
             traceback.print_exc()
     
-    def delete_document_vectors(self, document_id: str) -> bool:
-        """Delete all vectors for a specific document"""
+    def delete_document_vectors(self, document_id: str, point_ids: List[str] = None) -> bool:
+        """Delete all vectors for a specific document using point IDs"""
         try:
-            # Delete by filter on document_id metadata
-            self.qdrant_client.delete(
-                collection_name=settings.COLLECTION_NAME,
-                points_selector=models.FilterSelector(
-                    filter=models.Filter(
-                        must=[
-                            models.FieldCondition(
-                                key="document_id",
-                                match=models.MatchValue(value=document_id)
-                            )
-                        ]
+            if point_ids:
+                # Delete by point IDs (reliable, no index required)
+                self.qdrant_client.delete(
+                    collection_name=settings.COLLECTION_NAME,
+                    points_selector=models.PointIdsList(
+                        points=point_ids
                     )
                 )
-            )
+                print(f"✅ Deleted {len(point_ids)} vectors for document: {document_id}")
+            else:
+                print(f"⚠️  No point IDs provided for document {document_id}, skipping Qdrant delete")
             
             # Remove from cache
             if document_id in self._documents:
                 del self._documents[document_id]
             
-            print(f"Deleted vectors for document: {document_id}")
+            # Reload cache from Qdrant to ensure consistency
+            self.load_documents_from_qdrant()
+            
             return True
         except Exception as e:
-            print(f"Error deleting document vectors: {e}")
+            print(f"❌ Error deleting document vectors: {e}")
             return False
     
     def get_stats(self) -> dict:
